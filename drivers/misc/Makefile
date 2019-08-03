@@ -4,11 +4,13 @@
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
 
 obj-$(CONFIG_MISC) += misc-uclass.o
+
+obj-$(CONFIG_$(SPL_TPL_)CROS_EC) += cros_ec.o
+obj-$(CONFIG_$(SPL_TPL_)CROS_EC_SANDBOX) += cros_ec_sandbox.o
+obj-$(CONFIG_$(SPL_TPL_)CROS_EC_LPC) += cros_ec_lpc.o
+
 ifndef CONFIG_SPL_BUILD
-obj-$(CONFIG_CROS_EC) += cros_ec.o
-obj-$(CONFIG_CROS_EC_LPC) += cros_ec_lpc.o
 obj-$(CONFIG_CROS_EC_I2C) += cros_ec_i2c.o
-obj-$(CONFIG_CROS_EC_SANDBOX) += cros_ec_sandbox.o
 obj-$(CONFIG_CROS_EC_SPI) += cros_ec_spi.o
 endif
 
@@ -62,3 +64,4 @@ obj-$(CONFIG_TEGRA_CAR) += tegra_car.o
 obj-$(CONFIG_TWL4030_LED) += twl4030_led.o
 obj-$(CONFIG_VEXPRESS_CONFIG) += vexpress_config.o
 obj-$(CONFIG_WINBOND_W83627) += winbond_w83627.o
+obj-$(CONFIG_JZ4780_EFUSE) += jz4780_efuse.o

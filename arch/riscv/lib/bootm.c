@@ -13,6 +13,7 @@
 #include <image.h>
 #include <asm/byteorder.h>
 #include <asm/csr.h>
+#include <asm/smp.h>
 #include <dm/device.h>
 #include <dm/root.h>
 #include <u-boot/zlib.h>
@@ -81,19 +82,29 @@ static void boot_jump_linux(bootm_headers_t *images, int flag)
 {
 	void (*kernel)(ulong hart, void *dtb);
 	int fake = (flag & BOOTM_STATE_OS_FAKE_GO);
+#ifdef CONFIG_SMP
+	int ret;
+#endif
 
 	kernel = (void (*)(ulong, void *))images->ep;
 
 	bootstage_mark(BOOTSTAGE_ID_RUN_OS);
 
-	debug("## Transferring control to Linux (at address %08lx) ...\n",
+	debug("## Transferring control to kernel (at address %08lx) ...\n",
 	      (ulong)kernel);
 
 	announce_and_cleanup(fake);
 
 	if (!fake) {
-		if (IMAGE_ENABLE_OF_LIBFDT && images->ft_len)
-			kernel(csr_read(mhartid), images->ft_addr);
+		if (IMAGE_ENABLE_OF_LIBFDT && images->ft_len) {
+#ifdef CONFIG_SMP
+			ret = smp_call_function(images->ep,
+						(ulong)images->ft_addr, 0);
+			if (ret)
+				hang();
+#endif
+			kernel(gd->arch.boot_hart, images->ft_addr);
+		}
 	}
 }
 
@@ -117,4 +128,10 @@ int do_bootm_linux(int flag, int argc, char * const argv[],
 	boot_prep_linux(images);
 	boot_jump_linux(images, flag);
 	return 0;
+}
+
+int do_bootm_vxworks(int flag, int argc, char * const argv[],
+		     bootm_headers_t *images)
+{
+	return do_bootm_linux(flag, argc, argv, images);
 }

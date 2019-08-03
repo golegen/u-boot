@@ -65,6 +65,38 @@ int dev_read_u32(struct udevice *dev, const char *propname, u32 *outp);
 int dev_read_u32_default(struct udevice *dev, const char *propname, int def);
 
 /**
+ * dev_read_s32() - read a signed 32-bit integer from a device's DT property
+ *
+ * @dev:	device to read DT property from
+ * @propname:	name of the property to read from
+ * @outp:	place to put value (if found)
+ * @return 0 if OK, -ve on error
+ */
+int dev_read_s32(struct udevice *dev, const char *propname, s32 *outp);
+
+/**
+ * dev_read_s32_default() - read a signed 32-bit int from a device's DT property
+ *
+ * @dev:	device to read DT property from
+ * @propname:	name of the property to read from
+ * @def:	default value to return if the property has no value
+ * @return property value, or @def if not found
+ */
+int dev_read_s32_default(struct udevice *dev, const char *propname, int def);
+
+/**
+ * dev_read_u32u() - read a 32-bit integer from a device's DT property
+ *
+ * This version uses a standard uint type.
+ *
+ * @dev:	device to read DT property from
+ * @propname:	name of the property to read from
+ * @outp:	place to put value (if found)
+ * @return 0 if OK, -ve on error
+ */
+int dev_read_u32u(struct udevice *dev, const char *propname, uint *outp);
+
+/**
  * dev_read_string() - Read a string from a device's DT property
  *
  * @dev:	device to read DT property from
@@ -195,7 +227,7 @@ fdt_addr_t dev_read_addr_size(struct udevice *dev, const char *propname,
 /**
  * dev_read_name() - get the name of a device's node
  *
- * @node: valid node to look up
+ * @dev: Device to read from
  * @return name of node
  */
 const char *dev_read_name(struct udevice *dev);
@@ -467,7 +499,7 @@ int dev_read_resource_byname(struct udevice *dev, const char *name,
 			     struct resource *res);
 
 /**
- * dev_translate_address() - Tranlate a device-tree address
+ * dev_translate_address() - Translate a device-tree address
  *
  * Translate an address from the device-tree into a CPU physical address.  This
  * function walks up the tree and applies the various bus mappings along the
@@ -478,6 +510,30 @@ int dev_read_resource_byname(struct udevice *dev, const char *name,
  * @return the translated address; OF_BAD_ADDR on error
  */
 u64 dev_translate_address(struct udevice *dev, const fdt32_t *in_addr);
+
+/**
+ * dev_translate_dma_address() - Translate a device-tree DMA address
+ *
+ * Translate a DMA address from the device-tree into a CPU physical address.
+ * This function walks up the tree and applies the various bus mappings along
+ * the way.
+ *
+ * @dev: device giving the context in which to translate the DMA address
+ * @in_addr: pointer to the DMA address to translate
+ * @return the translated DMA address; OF_BAD_ADDR on error
+ */
+u64 dev_translate_dma_address(struct udevice *dev, const fdt32_t *in_addr);
+
+/**
+ * dev_read_alias_highest_id - Get highest alias id for the given stem
+ * @stem:	Alias stem to be examined
+ *
+ * The function travels the lookup table to get the highest alias id for the
+ * given alias stem.
+ * @return alias ID, if found, else -1
+ */
+int dev_read_alias_highest_id(const char *stem);
+
 #else /* CONFIG_DM_DEV_READ_INLINE is enabled */
 
 static inline int dev_read_u32(struct udevice *dev,
@@ -490,6 +546,32 @@ static inline int dev_read_u32_default(struct udevice *dev,
 				       const char *propname, int def)
 {
 	return ofnode_read_u32_default(dev_ofnode(dev), propname, def);
+}
+
+static inline int dev_read_s32(struct udevice *dev,
+			       const char *propname, s32 *outp)
+{
+	return ofnode_read_s32(dev_ofnode(dev), propname, outp);
+}
+
+static inline int dev_read_s32_default(struct udevice *dev,
+				       const char *propname, int def)
+{
+	return ofnode_read_s32_default(dev_ofnode(dev), propname, def);
+}
+
+static inline int dev_read_u32u(struct udevice *dev,
+				const char *propname, uint *outp)
+{
+	u32 val;
+	int ret;
+
+	ret = ofnode_read_u32(dev_ofnode(dev), propname, &val);
+	if (ret)
+		return ret;
+	*outp = val;
+
+	return 0;
 }
 
 static inline const char *dev_read_string(struct udevice *dev,
@@ -680,6 +762,16 @@ static inline int dev_read_resource_byname(struct udevice *dev,
 static inline u64 dev_translate_address(struct udevice *dev, const fdt32_t *in_addr)
 {
 	return ofnode_translate_address(dev_ofnode(dev), in_addr);
+}
+
+static inline u64 dev_translate_dma_address(struct udevice *dev, const fdt32_t *in_addr)
+{
+	return ofnode_translate_dma_address(dev_ofnode(dev), in_addr);
+}
+
+static inline int dev_read_alias_highest_id(const char *stem)
+{
+	return fdtdec_get_alias_highest_id(gd->fdt_blob, stem);
 }
 
 #endif /* CONFIG_DM_DEV_READ_INLINE */

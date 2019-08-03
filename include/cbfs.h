@@ -18,18 +18,39 @@ enum cbfs_result {
 };
 
 enum cbfs_filetype {
+	CBFS_TYPE_BOOTBLOCK = 0x01,
+	CBFS_TYPE_CBFSHEADER = 0x02,
 	CBFS_TYPE_STAGE = 0x10,
 	CBFS_TYPE_PAYLOAD = 0x20,
+	CBFS_TYPE_FIT = 0x21,
 	CBFS_TYPE_OPTIONROM = 0x30,
 	CBFS_TYPE_BOOTSPLASH = 0x40,
 	CBFS_TYPE_RAW = 0x50,
 	CBFS_TYPE_VSA = 0x51,
 	CBFS_TYPE_MBI = 0x52,
 	CBFS_TYPE_MICROCODE = 0x53,
-	CBFS_COMPONENT_CMOS_DEFAULT = 0xaa,
-	CBFS_COMPONENT_CMOS_LAYOUT = 0x01aa
+	CBFS_TYPE_FSP = 0x60,
+	CBFS_TYPE_MRC = 0x61,
+	CBFS_TYPE_MMA = 0x62,
+	CBFS_TYPE_EFI = 0x63,
+	CBFS_TYPE_STRUCT = 0x70,
+	CBFS_TYPE_CMOS_DEFAULT = 0xaa,
+	CBFS_TYPE_SPD = 0xab,
+	CBFS_TYPE_MRC_CACHE = 0xac,
+	CBFS_TYPE_CMOS_LAYOUT = 0x01aa
 };
 
+enum {
+	CBFS_HEADER_MAGIC	= 0x4f524243,
+};
+
+/**
+ * struct cbfs_header - header at the start of a CBFS region
+ *
+ * All fields use big-endian format.
+ *
+ * @magic: Magic number (CBFS_HEADER_MAGIC)
+ */
 struct cbfs_header {
 	u32 magic;
 	u32 version;
@@ -44,7 +65,8 @@ struct cbfs_fileheader {
 	u8 magic[8];
 	u32 len;
 	u32 type;
-	u32 checksum;
+	/* offset to struct cbfs_file_attribute or 0 */
+	u32 attributes_offset;
 	u32 offset;
 } __packed;
 
@@ -55,7 +77,7 @@ struct cbfs_cachenode {
 	u32 data_length;
 	char *name;
 	u32 name_length;
-	u32 checksum;
+	u32 attributes_offset;
 } __packed;
 
 extern enum cbfs_result file_cbfs_result;

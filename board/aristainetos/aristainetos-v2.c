@@ -20,7 +20,7 @@
 #include <asm/mach-imx/mxc_i2c.h>
 #include <asm/mach-imx/video.h>
 #include <mmc.h>
-#include <fsl_esdhc.h>
+#include <fsl_esdhc_imx.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <asm/arch/mxc_hdmi.h>
@@ -33,7 +33,7 @@
 #include <micrel.h>
 #include <spi.h>
 #include <video.h>
-#include <../drivers/video/ipu.h>
+#include <../drivers/video/imx/ipu.h>
 #if defined(CONFIG_VIDEO_BMP_LOGO)
 	#include <bmp_logo.h>
 #endif

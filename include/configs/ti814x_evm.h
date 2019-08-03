@@ -18,7 +18,6 @@
 
 #include <asm/arch/omap.h>
 
-#define CONFIG_ENV_SIZE			(128 << 10)	/* 128 KiB */
 #define CONFIG_SYS_MALLOC_LEN		(1024 << 10)
 #define CONFIG_MACH_TYPE		MACH_TYPE_TI8148EVM
 
@@ -122,7 +121,6 @@
 #define CONFIG_ENV_OVERWRITE
 
 /* Defines for SPL */
-#define CONFIG_SPL_TEXT_BASE		0x40300000
 #define CONFIG_SPL_MAX_SIZE		(SRAM_SCRATCH_SPACE_ADDR - \
 					 CONFIG_SPL_TEXT_BASE)
 

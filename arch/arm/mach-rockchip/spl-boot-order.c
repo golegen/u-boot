@@ -8,7 +8,7 @@
 #include <mmc.h>
 #include <spl.h>
 
-#if CONFIG_IS_ENABLED(OF_CONTROL)
+#if CONFIG_IS_ENABLED(OF_LIBFDT)
 /**
  * spl_node_to_boot_device() - maps from a DT-node to a SPL boot device
  * @node:	of_offset of the node
@@ -61,6 +61,9 @@ static int spl_node_to_boot_device(int node)
 		default:
 			return -ENOSYS;
 		}
+	} else if (!uclass_get_device_by_of_offset(UCLASS_SPI_FLASH, node,
+		&parent)) {
+		return BOOT_DEVICE_SPI;
 	}
 
 	/*

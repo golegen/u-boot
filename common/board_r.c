@@ -48,6 +48,10 @@
 #include <linux/compiler.h>
 #include <linux/err.h>
 #include <efi_loader.h>
+#include <wdt.h>
+#if defined(CONFIG_GPIO_HOG)
+#include <asm/gpio.h>
+#endif
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -154,6 +158,13 @@ static int initr_reloc_global_data(void)
 	gd->fdt_blob += gd->reloc_off;
 #endif
 #ifdef CONFIG_EFI_LOADER
+	/*
+	 * On the ARM architecture gd is mapped to a fixed register (r9 or x18).
+	 * As this register may be overwritten by an EFI payload we save it here
+	 * and restore it on every callback entered.
+	 */
+	efi_save_gd();
+
 	efi_runtime_relocate(gd->relocaddr, NULL);
 #endif
 
@@ -633,10 +644,7 @@ static int run_main_loop(void)
 }
 
 /*
- * Over time we hope to remove these functions with code fragments and
- * stub functions, and instead call the relevant function directly.
- *
- * We also hope to remove most of the driver-related init and do it if/when
+ * We hope to remove most of the driver-related init and do it if/when
  * the driver is later used.
  *
  * TODO: perhaps reset the watchdog in the initcall function after each call?
@@ -692,6 +700,9 @@ static init_fnc_t init_sequence_r[] = {
 	stdio_init_tables,
 	initr_serial,
 	initr_announce,
+#if CONFIG_IS_ENABLED(WDT)
+	initr_watchdog,
+#endif
 	INIT_FUNC_WATCHDOG_RESET
 #ifdef CONFIG_NEEDS_MANUAL_RELOC
 	initr_manual_reloc_cmdtable,
@@ -787,6 +798,9 @@ static init_fnc_t init_sequence_r[] = {
 	/* PPC has a udelay(20) here dating from 2002. Why? */
 #ifdef CONFIG_CMD_NET
 	initr_ethaddr,
+#endif
+#if defined(CONFIG_GPIO_HOG)
+	gpio_hog_probe_all,
 #endif
 #ifdef CONFIG_BOARD_LATE_INIT
 	board_late_init,

@@ -21,6 +21,29 @@ int dev_read_u32_default(struct udevice *dev, const char *propname, int def)
 	return ofnode_read_u32_default(dev_ofnode(dev), propname, def);
 }
 
+int dev_read_s32(struct udevice *dev, const char *propname, s32 *outp)
+{
+	return ofnode_read_u32(dev_ofnode(dev), propname, (u32 *)outp);
+}
+
+int dev_read_s32_default(struct udevice *dev, const char *propname, int def)
+{
+	return ofnode_read_u32_default(dev_ofnode(dev), propname, def);
+}
+
+int dev_read_u32u(struct udevice *dev, const char *propname, uint *outp)
+{
+	u32 val;
+	int ret;
+
+	ret = ofnode_read_u32(dev_ofnode(dev), propname, &val);
+	if (ret)
+		return ret;
+	*outp = val;
+
+	return 0;
+}
+
 const char *dev_read_string(struct udevice *dev, const char *propname)
 {
 	return ofnode_read_string(dev_ofnode(dev), propname);
@@ -240,4 +263,17 @@ int dev_read_resource_byname(struct udevice *dev, const char *name,
 u64 dev_translate_address(struct udevice *dev, const fdt32_t *in_addr)
 {
 	return ofnode_translate_address(dev_ofnode(dev), in_addr);
+}
+
+u64 dev_translate_dma_address(struct udevice *dev, const fdt32_t *in_addr)
+{
+	return ofnode_translate_dma_address(dev_ofnode(dev), in_addr);
+}
+
+int dev_read_alias_highest_id(const char *stem)
+{
+	if (of_live_active())
+		return of_alias_get_highest_id(stem);
+
+	return fdtdec_get_alias_highest_id(gd->fdt_blob, stem);
 }

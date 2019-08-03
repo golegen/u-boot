@@ -29,10 +29,12 @@ enum uclass_id {
 	/* U-Boot uclasses start here - in alphabetical order */
 	UCLASS_ADC,		/* Analog-to-digital converter */
 	UCLASS_AHCI,		/* SATA disk controller */
+	UCLASS_AUDIO_CODEC,	/* Audio codec with control and data path */
 	UCLASS_AXI,		/* AXI bus */
 	UCLASS_BLK,		/* Block device */
 	UCLASS_BOARD,		/* Device information from hardware */
 	UCLASS_BOOTCOUNT,       /* Bootcount backing store */
+	UCLASS_CACHE,		/* Cache controller */
 	UCLASS_CLK,		/* Clock source, e.g. used by peripherals */
 	UCLASS_CPU,		/* CPU, typically part of an SoC */
 	UCLASS_CROS_EC,		/* Chrome OS EC */
@@ -48,6 +50,7 @@ enum uclass_id {
 	UCLASS_I2C_EEPROM,	/* I2C EEPROM device */
 	UCLASS_I2C_GENERIC,	/* Generic I2C device */
 	UCLASS_I2C_MUX,		/* I2C multiplexer */
+	UCLASS_I2S,		/* I2S bus */
 	UCLASS_IDE,		/* IDE device */
 	UCLASS_IRQ,		/* Interrupt controller */
 	UCLASS_KEYBOARD,	/* Keyboard input device */
@@ -55,16 +58,20 @@ enum uclass_id {
 	UCLASS_LPC,		/* x86 'low pin count' interface */
 	UCLASS_MAILBOX,		/* Mailbox controller */
 	UCLASS_MASS_STORAGE,	/* Mass storage device */
+	UCLASS_MDIO,		/* MDIO bus */
+	UCLASS_MDIO_MUX,	/* MDIO MUX/switch */
 	UCLASS_MISC,		/* Miscellaneous device */
 	UCLASS_MMC,		/* SD / MMC card or chip */
 	UCLASS_MOD_EXP,		/* RSA Mod Exp device */
 	UCLASS_MTD,		/* Memory Technology Device (MTD) device */
+	UCLASS_NOP,		/* No-op devices */
 	UCLASS_NORTHBRIDGE,	/* Intel Northbridge / SDRAM controller */
 	UCLASS_NVME,		/* NVM Express device */
 	UCLASS_PANEL,		/* Display panel, such as an LCD */
 	UCLASS_PANEL_BACKLIGHT,	/* Backlight controller for panel */
 	UCLASS_PCH,		/* x86 platform controller hub */
 	UCLASS_PCI,		/* PCI bus */
+	UCLASS_PCI_EP,		/* PCI endpoint device */
 	UCLASS_PCI_GENERIC,	/* Generic PCI bus device */
 	UCLASS_PHY,		/* Physical Layer (PHY) device */
 	UCLASS_PINCONFIG,	/* Pin configuration node device */
@@ -82,6 +89,7 @@ enum uclass_id {
 	UCLASS_SERIAL,		/* Serial UART */
 	UCLASS_SIMPLE_BUS,	/* Bus with child devices */
 	UCLASS_SMEM,		/* Shared memory interface */
+	UCLASS_SOUND,		/* Playing simple sounds */
 	UCLASS_SPI,		/* SPI bus */
 	UCLASS_SPI_FLASH,	/* SPI flash */
 	UCLASS_SPI_GENERIC,	/* Generic SPI flash target */
@@ -103,7 +111,7 @@ enum uclass_id {
 	UCLASS_VIRTIO,		/* VirtIO transport device */
 	UCLASS_W1,		/* Dallas 1-Wire bus */
 	UCLASS_W1_EEPROM,	/* one-wire EEPROMs */
-	UCLASS_WDT,		/* Watchdot Timer driver */
+	UCLASS_WDT,		/* Watchdog Timer driver */
 
 	UCLASS_COUNT,
 	UCLASS_INVALID = -1,

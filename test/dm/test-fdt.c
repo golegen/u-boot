@@ -219,6 +219,29 @@ static int dm_test_fdt(struct unit_test_state *uts)
 }
 DM_TEST(dm_test_fdt, 0);
 
+static int dm_test_alias_highest_id(struct unit_test_state *uts)
+{
+	int ret;
+
+	ret = dev_read_alias_highest_id("eth");
+	ut_asserteq(5, ret);
+
+	ret = dev_read_alias_highest_id("gpio");
+	ut_asserteq(2, ret);
+
+	ret = dev_read_alias_highest_id("pci");
+	ut_asserteq(2, ret);
+
+	ret = dev_read_alias_highest_id("i2c");
+	ut_asserteq(0, ret);
+
+	ret = dev_read_alias_highest_id("deadbeef");
+	ut_asserteq(-1, ret);
+
+	return 0;
+}
+DM_TEST(dm_test_alias_highest_id, 0);
+
 static int dm_test_fdt_pre_reloc(struct unit_test_state *uts)
 {
 	struct uclass *uc;
@@ -467,6 +490,7 @@ U_BOOT_DRIVER(fdt_dummy_drv) = {
 static int dm_test_fdt_translation(struct unit_test_state *uts)
 {
 	struct udevice *dev;
+	fdt32_t dma_addr[2];
 
 	/* Some simple translations */
 	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 0, true, &dev));
@@ -485,6 +509,17 @@ static int dm_test_fdt_translation(struct unit_test_state *uts)
 	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 3, true, &dev));
 	ut_asserteq_str("dev@42", dev->name);
 	ut_asserteq(0x42, dev_read_addr(dev));
+
+	/* dma address translation */
+	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 0, true, &dev));
+	dma_addr[0] = cpu_to_be32(0);
+	dma_addr[1] = cpu_to_be32(0);
+	ut_asserteq(0x10000000, dev_translate_dma_address(dev, dma_addr));
+
+	ut_assertok(uclass_find_device_by_seq(UCLASS_TEST_DUMMY, 1, true, &dev));
+	dma_addr[0] = cpu_to_be32(1);
+	dma_addr[1] = cpu_to_be32(0x100);
+	ut_asserteq(0x20000000, dev_translate_dma_address(dev, dma_addr));
 
 	return 0;
 }
@@ -736,3 +771,38 @@ static int dm_test_first_child(struct unit_test_state *uts)
 	return 0;
 }
 DM_TEST(dm_test_first_child, DM_TESTF_SCAN_PDATA | DM_TESTF_SCAN_FDT);
+
+/* Test integer functions in dm_read_...() */
+static int dm_test_read_int(struct unit_test_state *uts)
+{
+	struct udevice *dev;
+	u32 val32;
+	s32 sval;
+	uint val;
+
+	ut_assertok(uclass_first_device_err(UCLASS_TEST_FDT, &dev));
+	ut_asserteq_str("a-test", dev->name);
+	ut_assertok(dev_read_u32(dev, "int-value", &val32));
+	ut_asserteq(1234, val32);
+
+	ut_asserteq(-EINVAL, dev_read_u32(dev, "missing", &val32));
+	ut_asserteq(6, dev_read_u32_default(dev, "missing", 6));
+
+	ut_asserteq(1234, dev_read_u32_default(dev, "int-value", 6));
+	ut_asserteq(1234, val32);
+
+	ut_asserteq(-EINVAL, dev_read_s32(dev, "missing", &sval));
+	ut_asserteq(6, dev_read_s32_default(dev, "missing", 6));
+
+	ut_asserteq(-1234, dev_read_s32_default(dev, "uint-value", 6));
+	ut_assertok(dev_read_s32(dev, "uint-value", &sval));
+	ut_asserteq(-1234, sval);
+
+	val = 0;
+	ut_asserteq(-EINVAL, dev_read_u32u(dev, "missing", &val));
+	ut_assertok(dev_read_u32u(dev, "uint-value", &val));
+	ut_asserteq(-1234, val);
+
+	return 0;
+}
+DM_TEST(dm_test_read_int, DM_TESTF_SCAN_PDATA | DM_TESTF_SCAN_FDT);

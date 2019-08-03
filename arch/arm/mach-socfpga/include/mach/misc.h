@@ -18,9 +18,9 @@ struct bsel {
 extern struct bsel bsel_str[];
 
 #ifdef CONFIG_FPGA
-void socfpga_fpga_add(void);
+void socfpga_fpga_add(void *fpga_desc);
 #else
-static inline void socfpga_fpga_add(void) {}
+inline void socfpga_fpga_add(void *fpga_desc) {}
 #endif
 
 #ifdef CONFIG_TARGET_SOCFPGA_GEN5
@@ -39,6 +39,7 @@ void socfpga_init_security_policies(void);
 void socfpga_sdram_remap_zero(void);
 #endif
 
-void do_bridge_reset(int enable);
+void do_bridge_reset(int enable, unsigned int mask);
+void socfpga_pl310_clear(void);
 
 #endif /* _MISC_H_ */

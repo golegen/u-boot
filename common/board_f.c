@@ -381,7 +381,7 @@ static int reserve_round_4k(void)
 #ifdef CONFIG_ARM
 __weak int reserve_mmu(void)
 {
-#if !(defined(CONFIG_SYS_ICACHE_OFF) && defined(CONFIG_SYS_DCACHE_OFF))
+#if !(CONFIG_IS_ENABLED(SYS_ICACHE_OFF) && CONFIG_IS_ENABLED(SYS_DCACHE_OFF))
 	/* reserve TLB table */
 	gd->arch.tlb_size = PGTABLE_SIZE;
 	gd->relocaddr -= gd->arch.tlb_size;
@@ -442,8 +442,8 @@ static int reserve_trace(void)
 #ifdef CONFIG_TRACE
 	gd->relocaddr -= CONFIG_TRACE_BUFFER_SIZE;
 	gd->trace_buff = map_sysmem(gd->relocaddr, CONFIG_TRACE_BUFFER_SIZE);
-	debug("Reserving %dk for trace data at: %08lx\n",
-	      CONFIG_TRACE_BUFFER_SIZE >> 10, gd->relocaddr);
+	debug("Reserving %luk for trace data at: %08lx\n",
+	      (unsigned long)CONFIG_TRACE_BUFFER_SIZE >> 10, gd->relocaddr);
 #endif
 
 	return 0;
@@ -714,7 +714,7 @@ static int setup_reloc(void)
 	 * just after the default vector table location, so at 0x400
 	 */
 	gd->reloc_off = gd->relocaddr - (CONFIG_SYS_TEXT_BASE + 0x400);
-#else
+#elif !defined(CONFIG_SANDBOX)
 	gd->reloc_off = gd->relocaddr - CONFIG_SYS_TEXT_BASE;
 #endif
 #endif
@@ -839,7 +839,7 @@ static const init_fnc_t init_sequence_f[] = {
 #ifdef CONFIG_OF_CONTROL
 	fdtdec_setup,
 #endif
-#ifdef CONFIG_TRACE
+#ifdef CONFIG_TRACE_EARLY
 	trace_early_init,
 #endif
 	initf_malloc,

@@ -280,7 +280,7 @@ static int do_fpga_loadmk(cmd_tbl_t *cmdtp, int flag, int argc,
 	}
 
 	switch (genimg_get_format(fpga_data)) {
-#if defined(CONFIG_IMAGE_FORMAT_LEGACY)
+#if defined(CONFIG_LEGACY_IMAGE_FORMAT)
 	case IMAGE_FORMAT_LEGACY:
 	{
 		image_header_t *hdr = (image_header_t *)fpga_data;
@@ -343,9 +343,9 @@ static int do_fpga_loadmk(cmd_tbl_t *cmdtp, int flag, int argc,
 			return CMD_RET_FAILURE;
 		}
 
-		/* get fpga subimage data address and length */
-		if (fit_image_get_data(fit_hdr, noffset, &fit_data,
-				       &data_size)) {
+		/* get fpga subimage/external data address and length */
+		if (fit_image_get_data_and_size(fit_hdr, noffset,
+					       &fit_data, &data_size)) {
 			puts("Fpga subimage data not found\n");
 			return CMD_RET_FAILURE;
 		}
@@ -458,7 +458,7 @@ U_BOOT_CMD(fpga, 6, 1, do_fpga_wrapper,
 	   "0-device key, 1-user key, 2-no encryption.\n"
 	   "The optional Userkey address specifies from which address key\n"
 	   "has to be used for decryption if user key is selected.\n"
-	   "NOTE: the sceure bitstream has to be created using xilinx\n"
+	   "NOTE: the secure bitstream has to be created using Xilinx\n"
 	   "bootgen tool only.\n"
 #endif
 );

@@ -19,14 +19,6 @@
 #endif
 
 /*
-* Disable DM_* for SPL build and can be re-enabled after adding
-* DM support in SPL
-*/
-#ifdef CONFIG_SPL_BUILD
-#undef CONFIG_DM_I2C
-#undef CONFIG_DM_I2C_COMPAT
-#endif
-/*
  * SoC Configuration
  */
 #define CONFIG_SYS_EXCEPTION_VECTORS_HIGH
@@ -48,7 +40,8 @@
 #define PHYS_SDRAM_1		DAVINCI_DDR_EMIF_DATA_BASE /* DDR Start */
 #define PHYS_SDRAM_1_SIZE	(64 << 20) /* SDRAM size 64MB */
 #define CONFIG_MAX_RAM_BANK_SIZE (512 << 20) /* max size from SPRS586*/
-
+#define CONFIG_SPL_BSS_START_ADDR DAVINCI_DDR_EMIF_DATA_BASE
+#define CONFIG_SPL_BSS_MAX_SIZE 0x1080000
 /* memtest start addr */
 #define CONFIG_SYS_MEMTEST_START	(PHYS_SDRAM_1 + 0x2000000)
 
@@ -123,10 +116,7 @@
 #define CONFIG_SYS_SPI_CLK		clk_get(DAVINCI_SPI1_CLKID)
 #ifdef CONFIG_SPL_BUILD
 #define CONFIG_SYS_SPI_BASE		DAVINCI_SPI1_BASE
-#define CONFIG_SF_DEFAULT_SPEED		30000000
 #endif
-#define CONFIG_ENV_SPI_MAX_HZ	0
-#define CONFIG_ENV_SPI_MODE	0
 
 #ifdef CONFIG_USE_SPIFLASH
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	0x8000
@@ -184,6 +174,10 @@
 #define CONFIG_SPL_NAND_DRIVERS
 #define CONFIG_SPL_NAND_ECC
 #define CONFIG_SPL_NAND_LOAD
+
+#ifndef CONFIG_SPL_BUILD
+#define CONFIG_SYS_NAND_SELF_INIT
+#endif
 #endif
 
 /*
@@ -269,13 +263,16 @@
 #define CONFIG_ENV_SIZE		(16 << 10)
 #endif
 
+/* USB Configs */
+#define CONFIG_USB_OHCI_NEW
+#define CONFIG_SYS_USB_OHCI_MAX_ROOT_PORTS	15
+
 #ifndef CONFIG_DIRECT_NOR_BOOT
 /* defines for SPL */
 #define CONFIG_SYS_SPL_MALLOC_START	(CONFIG_SYS_TEXT_BASE - \
 						CONFIG_SYS_MALLOC_LEN)
 #define CONFIG_SYS_SPL_MALLOC_SIZE	CONFIG_SYS_MALLOC_LEN
 #define CONFIG_SPL_STACK	0x8001ff00
-#define CONFIG_SPL_TEXT_BASE	0x80000000
 #define CONFIG_SPL_MAX_FOOTPRINT	32768
 #define CONFIG_SPL_PAD_TO	32768
 #endif

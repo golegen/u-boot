@@ -337,18 +337,20 @@ static int dwc3_glue_remove(struct udevice *dev)
 
 	clk_release_bulk(&glue->clks);
 
-	return dm_scan_fdt_dev(dev);
+	return 0;
 }
 
 static const struct udevice_id dwc3_glue_ids[] = {
 	{ .compatible = "xlnx,zynqmp-dwc3" },
+	{ .compatible = "ti,keystone-dwc3"},
 	{ .compatible = "ti,dwc3", .data = (ulong)&ti_ops },
+	{ .compatible = "ti,am437x-dwc3", .data = (ulong)&ti_ops },
 	{ }
 };
 
 U_BOOT_DRIVER(dwc3_generic_wrapper) = {
 	.name	= "dwc3-generic-wrapper",
-	.id	= UCLASS_MISC,
+	.id	= UCLASS_NOP,
 	.of_match = dwc3_glue_ids,
 	.bind = dwc3_glue_bind,
 	.probe = dwc3_glue_probe,

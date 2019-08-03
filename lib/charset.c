@@ -335,11 +335,16 @@ s32 utf_to_upper(const s32 code)
 	return ret;
 }
 
-size_t u16_strlen(const u16 *in)
+size_t u16_strlen(const void *in)
 {
-	size_t i;
-	for (i = 0; in[i]; i++);
-	return i;
+	const char *pos = in;
+	size_t ret;
+
+	for (; pos[0] || pos[1]; pos += 2)
+		;
+	ret = pos - (char *)in;
+	ret >>= 1;
+	return ret;
 }
 
 size_t u16_strnlen(const u16 *in, size_t count)
@@ -347,6 +352,35 @@ size_t u16_strnlen(const u16 *in, size_t count)
 	size_t i;
 	for (i = 0; count-- && in[i]; i++);
 	return i;
+}
+
+u16 *u16_strcpy(u16 *dest, const u16 *src)
+{
+	u16 *tmp = dest;
+
+	for (;; dest++, src++) {
+		*dest = *src;
+		if (!*src)
+			break;
+	}
+
+	return tmp;
+}
+
+u16 *u16_strdup(const void *src)
+{
+	u16 *new;
+	size_t len;
+
+	if (!src)
+		return NULL;
+	len = (u16_strlen(src) + 1) * sizeof(u16);
+	new = malloc(len);
+	if (!new)
+		return NULL;
+	memcpy(new, src, len);
+
+	return new;
 }
 
 /* Convert UTF-16 to UTF-8.  */

@@ -39,18 +39,24 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#if	!defined(CONFIG_ENV_IS_IN_EEPROM)	&& \
-	!defined(CONFIG_ENV_IS_IN_FLASH)	&& \
-	!defined(CONFIG_ENV_IS_IN_MMC)		&& \
-	!defined(CONFIG_ENV_IS_IN_FAT)		&& \
-	!defined(CONFIG_ENV_IS_IN_EXT4)		&& \
-	!defined(CONFIG_ENV_IS_IN_NAND)		&& \
-	!defined(CONFIG_ENV_IS_IN_NVRAM)	&& \
-	!defined(CONFIG_ENV_IS_IN_ONENAND)	&& \
-	!defined(CONFIG_ENV_IS_IN_SATA)		&& \
-	!defined(CONFIG_ENV_IS_IN_SPI_FLASH)	&& \
-	!defined(CONFIG_ENV_IS_IN_REMOTE)	&& \
-	!defined(CONFIG_ENV_IS_IN_UBI)		&& \
+#if	defined(CONFIG_ENV_IS_IN_EEPROM)	|| \
+	defined(CONFIG_ENV_IS_IN_FLASH)		|| \
+	defined(CONFIG_ENV_IS_IN_MMC)		|| \
+	defined(CONFIG_ENV_IS_IN_FAT)		|| \
+	defined(CONFIG_ENV_IS_IN_EXT4)		|| \
+	defined(CONFIG_ENV_IS_IN_NAND)		|| \
+	defined(CONFIG_ENV_IS_IN_NVRAM)		|| \
+	defined(CONFIG_ENV_IS_IN_ONENAND)	|| \
+	defined(CONFIG_ENV_IS_IN_SATA)		|| \
+	defined(CONFIG_ENV_IS_IN_SPI_FLASH)	|| \
+	defined(CONFIG_ENV_IS_IN_REMOTE)	|| \
+	defined(CONFIG_ENV_IS_IN_UBI)
+
+#define ENV_IS_IN_DEVICE
+
+#endif
+
+#if	!defined(ENV_IS_IN_DEVICE)		&& \
 	!defined(CONFIG_ENV_IS_NOWHERE)
 # error Define one of CONFIG_ENV_IS_IN_{EEPROM|FLASH|MMC|FAT|EXT4|\
 NAND|NVRAM|ONENAND|SATA|SPI_FLASH|REMOTE|UBI} or CONFIG_ENV_IS_NOWHERE
@@ -118,6 +124,11 @@ static int do_env_print(cmd_tbl_t *cmdtp, int flag, int argc,
 	int i;
 	int rcode = 0;
 	int env_flag = H_HIDE_DOT;
+
+#if defined(CONFIG_CMD_NVEDIT_EFI)
+	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'e')
+		return do_env_print_efi(cmdtp, flag, --argc, ++argv);
+#endif
 
 	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'a') {
 		argc--;
@@ -216,6 +227,12 @@ static int _do_env_set(int flag, int argc, char * const argv[], int env_flag)
 	ENTRY e, *ep;
 
 	debug("Initial value for argc=%d\n", argc);
+
+#if CONFIG_IS_ENABLED(CMD_NVEDIT_EFI)
+	if (argc > 1 && argv[1][0] == '-' && argv[1][1] == 'e')
+		return do_env_set_efi(NULL, flag, --argc, ++argv);
+#endif
+
 	while (argc > 1 && **(argv + 1) == '-') {
 		char *arg = *++argv;
 
@@ -708,8 +725,8 @@ int env_get_f(const char *name, char *buf, unsigned len)
 		if (n)
 			*--buf = '\0';
 
-		printf("env_buf [%d bytes] too small for value of \"%s\"\n",
-			len, name);
+		printf("env_buf [%u bytes] too small for value of \"%s\"\n",
+		       len, name);
 
 		return n;
 	}
@@ -738,7 +755,7 @@ ulong env_get_ulong(const char *name, int base, ulong default_val)
 }
 
 #ifndef CONFIG_SPL_BUILD
-#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
+#if defined(CONFIG_CMD_SAVEENV) && defined(ENV_IS_IN_DEVICE)
 static int do_env_save(cmd_tbl_t *cmdtp, int flag, int argc,
 		       char * const argv[])
 {
@@ -750,6 +767,20 @@ U_BOOT_CMD(
 	"save environment variables to persistent storage",
 	""
 );
+
+#if defined(CONFIG_CMD_ERASEENV)
+static int do_env_erase(cmd_tbl_t *cmdtp, int flag, int argc,
+			char * const argv[])
+{
+	return env_erase() ? 1 : 0;
+}
+
+U_BOOT_CMD(
+	eraseenv, 1, 0,	do_env_erase,
+	"erase environment variables from persistent storage",
+	""
+);
+#endif
 #endif
 #endif /* CONFIG_SPL_BUILD */
 
@@ -1146,6 +1177,106 @@ sep_err:
 }
 #endif
 
+#if defined(CONFIG_CMD_NVEDIT_INFO)
+/*
+ * print_env_info - print environment information
+ */
+static int print_env_info(void)
+{
+	const char *value;
+
+	/* print environment validity value */
+	switch (gd->env_valid) {
+	case ENV_INVALID:
+		value = "invalid";
+		break;
+	case ENV_VALID:
+		value = "valid";
+		break;
+	case ENV_REDUND:
+		value = "redundant";
+		break;
+	default:
+		value = "unknown";
+		break;
+	}
+	printf("env_valid = %s\n", value);
+
+	/* print environment ready flag */
+	value = gd->flags & GD_FLG_ENV_READY ? "true" : "false";
+	printf("env_ready = %s\n", value);
+
+	/* print environment using default flag */
+	value = gd->flags & GD_FLG_ENV_DEFAULT ? "true" : "false";
+	printf("env_use_default = %s\n", value);
+
+	return CMD_RET_SUCCESS;
+}
+
+#define ENV_INFO_IS_DEFAULT	BIT(0) /* default environment bit mask */
+#define ENV_INFO_IS_PERSISTED	BIT(1) /* environment persistence bit mask */
+
+/*
+ * env info - display environment information
+ * env info [-d] - evaluate whether default environment is used
+ * env info [-p] - evaluate whether environment can be persisted
+ */
+static int do_env_info(cmd_tbl_t *cmdtp, int flag,
+		       int argc, char * const argv[])
+{
+	int eval_flags = 0;
+	int eval_results = 0;
+
+	/* display environment information */
+	if (argc <= 1)
+		return print_env_info();
+
+	/* process options */
+	while (--argc > 0 && **++argv == '-') {
+		char *arg = *argv;
+
+		while (*++arg) {
+			switch (*arg) {
+			case 'd':
+				eval_flags |= ENV_INFO_IS_DEFAULT;
+				break;
+			case 'p':
+				eval_flags |= ENV_INFO_IS_PERSISTED;
+				break;
+			default:
+				return CMD_RET_USAGE;
+			}
+		}
+	}
+
+	/* evaluate whether default environment is used */
+	if (eval_flags & ENV_INFO_IS_DEFAULT) {
+		if (gd->flags & GD_FLG_ENV_DEFAULT) {
+			printf("Default environment is used\n");
+			eval_results |= ENV_INFO_IS_DEFAULT;
+		} else {
+			printf("Environment was loaded from persistent storage\n");
+		}
+	}
+
+	/* evaluate whether environment can be persisted */
+	if (eval_flags & ENV_INFO_IS_PERSISTED) {
+#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
+		printf("Environment can be persisted\n");
+		eval_results |= ENV_INFO_IS_PERSISTED;
+#else
+		printf("Environment cannot be persisted\n");
+#endif
+	}
+
+	/* The result of evaluations is combined with AND */
+	if (eval_flags != eval_results)
+		return CMD_RET_FAILURE;
+
+	return CMD_RET_SUCCESS;
+}
+#endif
+
 #if defined(CONFIG_CMD_ENV_EXISTS)
 static int do_env_exists(cmd_tbl_t *cmdtp, int flag, int argc,
 		       char * const argv[])
@@ -1190,12 +1321,18 @@ static cmd_tbl_t cmd_env_sub[] = {
 #if defined(CONFIG_CMD_IMPORTENV)
 	U_BOOT_CMD_MKENT(import, 5, 0, do_env_import, "", ""),
 #endif
+#if defined(CONFIG_CMD_NVEDIT_INFO)
+	U_BOOT_CMD_MKENT(info, 2, 0, do_env_info, "", ""),
+#endif
 	U_BOOT_CMD_MKENT(print, CONFIG_SYS_MAXARGS, 1, do_env_print, "", ""),
 #if defined(CONFIG_CMD_RUN)
 	U_BOOT_CMD_MKENT(run, CONFIG_SYS_MAXARGS, 1, do_run, "", ""),
 #endif
-#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
+#if defined(CONFIG_CMD_SAVEENV) && defined(ENV_IS_IN_DEVICE)
 	U_BOOT_CMD_MKENT(save, 1, 0, do_env_save, "", ""),
+#if defined(CONFIG_CMD_ERASEENV)
+	U_BOOT_CMD_MKENT(erase, 1, 0, do_env_erase, "", ""),
+#endif
 #endif
 	U_BOOT_CMD_MKENT(set, CONFIG_SYS_MAXARGS, 0, do_env_set, "", ""),
 #if defined(CONFIG_CMD_ENV_EXISTS)
@@ -1262,12 +1399,26 @@ static char env_help_text[] =
 #if defined(CONFIG_CMD_IMPORTENV)
 	"env import [-d] [-t [-r] | -b | -c] addr [size] [var ...] - import environment\n"
 #endif
+#if defined(CONFIG_CMD_NVEDIT_INFO)
+	"env info - display environment information\n"
+	"env info [-d] - whether default environment is used\n"
+	"env info [-p] - whether environment can be persisted\n"
+#endif
 	"env print [-a | name ...] - print environment\n"
+#if defined(CONFIG_CMD_NVEDIT_EFI)
+	"env print -e [name ...] - print UEFI environment\n"
+#endif
 #if defined(CONFIG_CMD_RUN)
 	"env run var [...] - run commands in an environment variable\n"
 #endif
-#if defined(CONFIG_CMD_SAVEENV) && !defined(CONFIG_ENV_IS_NOWHERE)
+#if defined(CONFIG_CMD_SAVEENV) && defined(ENV_IS_IN_DEVICE)
 	"env save - save environment\n"
+#if defined(CONFIG_CMD_ERASEENV)
+	"env erase - erase environment\n"
+#endif
+#endif
+#if defined(CONFIG_CMD_NVEDIT_EFI)
+	"env set -e name [arg ...] - set UEFI variable; unset if 'arg' not specified\n"
 #endif
 	"env set [-f] name [arg ...]\n";
 #endif
@@ -1295,6 +1446,10 @@ U_BOOT_CMD_COMPLETE(
 	printenv, CONFIG_SYS_MAXARGS, 1,	do_env_print,
 	"print environment variables",
 	"[-a]\n    - print [all] values of all environment variables\n"
+#if defined(CONFIG_CMD_NVEDIT_EFI)
+	"printenv -e [name ...]\n"
+	"    - print UEFI variable 'name' or all the variables\n"
+#endif
 	"printenv name ...\n"
 	"    - print value of environment variable 'name'",
 	var_complete
@@ -1322,7 +1477,13 @@ U_BOOT_CMD_COMPLETE(
 U_BOOT_CMD_COMPLETE(
 	setenv, CONFIG_SYS_MAXARGS, 0,	do_env_set,
 	"set environment variables",
-	"[-f] name value ...\n"
+#if defined(CONFIG_CMD_NVEDIT_EFI)
+	"-e [-nv] name [value ...]\n"
+	"    - set UEFI variable 'name' to 'value' ...'\n"
+	"      'nv' option makes the variable non-volatile\n"
+	"    - delete UEFI variable 'name' if 'value' not specified\n"
+#endif
+	"setenv [-f] name value ...\n"
 	"    - [forcibly] set environment variable 'name' to 'value ...'\n"
 	"setenv [-f] name\n"
 	"    - [forcibly] delete environment variable 'name'",

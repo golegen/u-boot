@@ -66,7 +66,7 @@ static char *print_efiname(gpt_entry *pte)
 	return name;
 }
 
-static efi_guid_t system_guid = PARTITION_SYSTEM_GUID;
+static const efi_guid_t system_guid = PARTITION_SYSTEM_GUID;
 
 static inline int is_bootable(gpt_entry *p)
 {
@@ -209,6 +209,8 @@ int get_disk_guid(struct blk_desc * dev_desc, char *guid)
 	guid_bin = gpt_head->disk_guid.b;
 	uuid_bin_to_str(guid_bin, guid, UUID_STR_FORMAT_GUID);
 
+	/* Remember to free pte */
+	free(gpt_pte);
 	return 0;
 }
 
@@ -311,8 +313,8 @@ int part_get_info_efi(struct blk_desc *dev_desc, int part,
 		     - info->start;
 	info->blksz = dev_desc->blksz;
 
-	sprintf((char *)info->name, "%s",
-			print_efiname(&gpt_pte[part - 1]));
+	snprintf((char *)info->name, sizeof(info->name), "%s",
+		 print_efiname(&gpt_pte[part - 1]));
 	strcpy((char *)info->type, "U-Boot");
 	info->bootable = is_bootable(&gpt_pte[part - 1]);
 #if CONFIG_IS_ENABLED(PARTITION_UUIDS)
@@ -668,9 +670,18 @@ err:
 	return ret;
 }
 
-static void gpt_convert_efi_name_to_char(char *s, efi_char16_t *es, int n)
+/**
+ * gpt_convert_efi_name_to_char() - convert u16 string to char string
+ *
+ * TODO: this conversion only supports ANSI characters
+ *
+ * @s:	target buffer
+ * @es:	u16 string to be converted
+ * @n:	size of target buffer
+ */
+static void gpt_convert_efi_name_to_char(char *s, void *es, int n)
 {
-	char *ess = (char *)es;
+	char *ess = es;
 	int i, j;
 
 	memset(s, '\0', n);
@@ -696,6 +707,10 @@ int gpt_verify_headers(struct blk_desc *dev_desc, gpt_header *gpt_head,
 		       __func__);
 		return -1;
 	}
+
+	/* Free pte before allocating again */
+	free(*gpt_pte);
+
 	if (is_gpt_valid(dev_desc, (dev_desc->lba - 1),
 			 gpt_head, gpt_pte) != 1) {
 		printf("%s: *** ERROR: Invalid Backup GPT ***\n",

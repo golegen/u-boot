@@ -14,7 +14,6 @@
 #define CONFIG_SYS_SDRAM_BASE	0x00000000
 
 /* auto boot */
-#define CONFIG_PREBOOT
 
 #define CONFIG_SYS_BAUDRATE_TABLE	{ 9600, 19200, 38400, 57600, \
 					  115200, 230400, 460800, 921600 }
@@ -57,13 +56,7 @@
 /*
  * SPI Flash configuration
  */
-#define CONFIG_ENV_SPI_BUS		0
-#define CONFIG_ENV_SPI_CS		0
 
-/* SPI NOR flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_SPEED		1000000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_0
-#define CONFIG_ENV_SPI_MODE		CONFIG_SF_DEFAULT_MODE
 #define CONFIG_MTD_DEVICE		/* needed for mtdparts commands */
 #define CONFIG_MTD_PARTITIONS		/* required for UBI partition support */
 

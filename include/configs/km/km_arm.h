@@ -33,15 +33,6 @@
 #include "keymile-common.h"
 
 /* SPI NOR Flash default params, used by sf commands */
-#define CONFIG_SF_DEFAULT_SPEED		8100000
-#define CONFIG_SF_DEFAULT_MODE		SPI_MODE_3
-
-#if defined CONFIG_KM_ENV_IS_IN_SPI_NOR
-#define CONFIG_ENV_SPI_BUS		0
-#define CONFIG_ENV_SPI_CS		0
-#define CONFIG_ENV_SPI_MAX_HZ		8100000
-#define CONFIG_ENV_SPI_MODE		SPI_MODE_3
-#endif
 
 /* Reserve 4 MB for malloc */
 #define CONFIG_SYS_MALLOC_LEN		(4 * 1024 * 1024)
@@ -210,11 +201,6 @@ int get_scl(void);
 
 #define CONFIG_SYS_REDUNDAND_ENVIRONMENT
 
-
-/* SPI bus claim MPP configuration */
-#define CONFIG_SYS_KW_SPI_MPP	0x0
-
-#define FLASH_GPIO_PIN			0x00010000
 #define KM_FLASH_GPIO_PIN	16
 
 #define	CONFIG_KM_UPDATE_UBOOT						\
